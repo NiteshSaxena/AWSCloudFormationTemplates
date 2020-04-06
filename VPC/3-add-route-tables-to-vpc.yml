@@ -1,0 +1,143 @@
+---
+Resources:
+
+  # VPC
+
+  cpVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.100.0.0/16
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      InstanceTenancy: "default"
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-vpc-sample"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+
+  # PUBLIC VPC NETWORK RESOURCES
+
+  cpIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-igw-sample"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpVpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref cpIgw
+      VpcId: !Ref cpVpc
+
+  cpPublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.100.1.0/24
+      MapPublicIpOnLaunch: True
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-subnet-public-one"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpVpcPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-main-route-table"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpIgwOutgoingRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref cpIgw
+      RouteTableId: !Ref cpVpcPublicRouteTable
+
+  cpPublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref cpVpcPublicRouteTable
+      SubnetId: !Ref cpPublicSubnetOne
+
+
+  # NAT - VPC NETWORK RESSOURCES FOR PRIVATE SUBNET PLACED IN PUBLIC SUBNET
+
+  cpNat1EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  cpNatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt cpNat1EIP.AllocationId
+      SubnetId: !Ref cpPublicSubnetOne
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-nat-gateway-one"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+
+  # PRIVATE VPC NETWORK RESOURCES
+
+  cpPrivateSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.100.51.0/24
+      MapPublicIpOnLaunch: False
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-subnet-private-one"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpVpcPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-main-route-table"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpDefaultPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref cpNatGateway1
+      RouteTableId: !Ref cpVpcPrivateRouteTable
+
+  cpPrivateSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref cpVpcPrivateRouteTable
+      SubnetId: !Ref cpPrivateSubnetOne

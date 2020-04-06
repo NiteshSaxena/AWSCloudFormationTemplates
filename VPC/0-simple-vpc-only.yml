@@ -1,0 +1,16 @@
+---
+Resources:
+  cfnpracticeVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.100.0.0/16
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      InstanceTenancy: "default"
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-vpc-sample"
+        -
+          Key: "Project"
+          Value: "cfnpractice"

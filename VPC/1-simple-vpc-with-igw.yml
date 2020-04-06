@@ -1,0 +1,33 @@
+---
+Resources:
+  cpVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.100.0.0/16
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      InstanceTenancy: "default"
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-vpc-sample"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-igw-sample"
+        -
+          Key: "Project"
+          Value: "cfnpractice"
+
+  cpVpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref cpIgw
+      VpcId: !Ref cpVpc
