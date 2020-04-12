@@ -1,6 +1,44 @@
 ---
 Parameters:
-  
+  VpcCidr:
+    Description: Please enter IP range (CIDR notation) for this VPC
+    Default: 10.0.0.0/16
+    Type: String
+
+  PublicSubnetOneCidr:
+    Description: Please enter IP range (CIDR notation) for Public Subnet 1
+    Default: 10.0.1.0/24
+    Type: String
+
+  PrivateSubnetOneCidr:
+    Description: Please enter IP range (CIDR notation) for Private Subnet 1
+    Default: 10.0.21.0/24
+    Type: String
+
+
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label: 
+          default: "Network Configuration"
+        Parameters:
+          - VpcCidr
+          - PublicSubnetOneCidr
+          - PrivateSubnetOneCidr
+    
+    ParameterLabels:
+      VpcCidr: 
+        default: VPC IP Range CIDR
+      PublicSubnetOneCidr: 
+        default: Public Subnet IP Range CIDR
+      PrivateSubnetOneCidr: 
+        default: Private Subnet IP Range CIDR
+
+
+
 
 Resources:
 
@@ -9,7 +47,7 @@ Resources:
   cpVpc:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.100.0.0/16
+      CidrBlock: !Ref VpcCidr
       EnableDnsHostnames: 'true'
       EnableDnsSupport: 'true'
       InstanceTenancy: "default"
@@ -17,9 +55,6 @@ Resources:
         -
           Key: "Name"
           Value: "cfnpractice-vpc-sample"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
 
   # PUBLIC VPC NETWORK RESOURCES
@@ -31,9 +66,6 @@ Resources:
         -
           Key: "Name"
           Value: "cfnpractice-igw-sample"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
   cpVpcGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -44,17 +76,14 @@ Resources:
   cpPublicSubnetOne:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: us-east-1a
-      CidrBlock: 10.100.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetOneCidr
       MapPublicIpOnLaunch: True
       VpcId: !Ref cpVpc
       Tags:
         -
           Key: "Name"
           Value: "cfnpractice-subnet-public-one"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
   cpVpcPublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -64,9 +93,6 @@ Resources:
         -
           Key: "Name"
           Value: "cfnpractice-main-route-table"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
   cpIgwOutgoingRoute:
     Type: AWS::EC2::Route
@@ -82,7 +108,7 @@ Resources:
       SubnetId: !Ref cpPublicSubnetOne
 
 
-  # NAT - VPC NETWORK RESSOURCES FOR PRIVATE SUBNET PLACED IN PUBLIC SUBNET
+  #NAT - VPC NETWORK RESSOURCES FOR PRIVATE SUBNET PLACED IN PUBLIC SUBNET
 
   cpNat1EIP:
     Type: AWS::EC2::EIP
@@ -98,9 +124,6 @@ Resources:
         -
           Key: "Name"
           Value: "cfnpractice-nat-gateway-one"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
 
   # PRIVATE VPC NETWORK RESOURCES
@@ -109,16 +132,13 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: us-east-1a
-      CidrBlock: 10.100.51.0/24
+      CidrBlock: !Ref PrivateSubnetOneCidr
       MapPublicIpOnLaunch: False
       VpcId: !Ref cpVpc
       Tags:
         -
           Key: "Name"
           Value: "cfnpractice-subnet-private-one"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
   cpVpcPrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -128,9 +148,6 @@ Resources:
         -
           Key: "Name"
           Value: "cfnpractice-private-route-table"
-        -
-          Key: "Project"
-          Value: "cfnpractice"
 
   cpDefaultPrivateRoute:
     Type: AWS::EC2::Route

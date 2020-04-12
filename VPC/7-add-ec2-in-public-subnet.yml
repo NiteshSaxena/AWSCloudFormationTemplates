@@ -1,0 +1,303 @@
+---
+Parameters:
+  VpcCidr:
+    Description: Please enter IP range (CIDR notation) for this VPC
+    Default: 10.0.0.0/16
+    Type: String
+
+  PublicSubnetOneCidr:
+    Description: Please enter IP range (CIDR notation) for Public Subnet 1
+    Default: 10.0.1.0/24
+    Type: String
+
+  PublicSubnetTwoCidr:
+    Description: Please enter IP range (CIDR notation) for Public Subnet 2
+    Default: 10.0.2.0/24
+    Type: String
+
+  PrivateSubnetOneCidr:
+    Description: Please enter IP range (CIDR notation) for Private Subnet 1
+    Default: 10.0.21.0/24
+    Type: String
+
+  PrivateSubnetTwoCidr:
+    Description: Please enter IP range (CIDR notation) for Private Subnet 2
+    Default: 10.0.22.0/24
+    Type: String
+
+
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label: 
+          default: "Network Configuration"
+        Parameters:
+          - VpcCidr
+          - PublicSubnetOneCidr
+          - PublicSubnetTwoCidr
+          - PrivateSubnetOneCidr
+          - PrivateSubnetTwoCidr
+    
+    ParameterLabels:
+      VpcCidr: 
+        default: VPC IP Range CIDR
+      PublicSubnetOneCidr: 
+        default: Public Subnet IP Range CIDR
+      PublicSubnetTwoCidr: 
+        default: Public Subnet IP Range CIDR
+      PrivateSubnetOneCidr: 
+        default: Private Subnet IP Range CIDR
+      PrivateSubnetTwoCidr: 
+        default: Private Subnet IP Range CIDR
+
+
+
+
+Resources:
+
+  # VPC
+
+  cpVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsHostnames: 'true'
+      EnableDnsSupport: 'true'
+      InstanceTenancy: "default"
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-vpc-sample"
+
+
+  # PUBLIC VPC NETWORK RESOURCES
+
+  cpIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-igw-sample"
+
+  cpVpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref cpIgw
+      VpcId: !Ref cpVpc
+
+  cpPublicSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetOneCidr
+      MapPublicIpOnLaunch: True
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-subnet-public-one"
+
+  cpPublicSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref PublicSubnetTwoCidr
+      MapPublicIpOnLaunch: True
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-subnet-public-two"
+
+  cpVpcPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-main-route-table"
+
+  cpIgwOutgoingRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref cpIgw
+      RouteTableId: !Ref cpVpcPublicRouteTable
+
+  cpPublicSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref cpVpcPublicRouteTable
+      SubnetId: !Ref cpPublicSubnetOne
+
+  cpPublicSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref cpVpcPublicRouteTable
+      SubnetId: !Ref cpPublicSubnetTwo
+
+
+  #NAT - VPC NETWORK RESSOURCES FOR PRIVATE SUBNET PLACED IN PUBLIC SUBNET
+
+  # cpNat1EIP:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+
+  # cpNat2EIP:
+  #   Type: AWS::EC2::EIP
+  #   Properties:
+  #     Domain: vpc
+
+  # cpNatGateway1:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt cpNat1EIP.AllocationId
+  #     SubnetId: !Ref cpPublicSubnetOne
+  #     Tags:
+  #       -
+  #         Key: "Name"
+  #         Value: "cfnpractice-nat-gateway-one"
+
+  # cpNatGateway2:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     AllocationId: !GetAtt cpNat2EIP.AllocationId
+  #     SubnetId: !Ref cpPublicSubnetTwo
+  #     Tags:
+  #       -
+  #         Key: "Name"
+  #         Value: "cfnpractice-nat-gateway-two"
+
+
+  # PRIVATE VPC NETWORK RESOURCES
+
+  cpPrivateSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref PrivateSubnetOneCidr
+      MapPublicIpOnLaunch: False
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-subnet-private-one"
+
+  cpPrivateSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Ref PrivateSubnetTwoCidr
+      MapPublicIpOnLaunch: False
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-subnet-private-two"
+
+  cpVpcPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref cpVpc
+      Tags:
+        -
+          Key: "Name"
+          Value: "cfnpractice-private-route-table"
+
+  # cpDefaultPrivateRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref cpNatGateway1
+  #     RouteTableId: !Ref cpVpcPrivateRouteTable
+
+  # cpDefaultPrivateRouteTwo:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref cpNatGateway2
+  #     RouteTableId: !Ref cpVpcPrivateRouteTable
+
+  cpPrivateSubnetOneRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref cpVpcPrivateRouteTable
+      SubnetId: !Ref cpPrivateSubnetOne
+
+  cpPrivateSubnetTwoRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref cpVpcPrivateRouteTable
+      SubnetId: !Ref cpPrivateSubnetTwo
+
+
+  # EC2 Instances
+  cpSSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: InboundSecurity
+      GroupDescription: Enable SSH for Instance
+      VpcId: !Ref cpVpc
+      SecurityGroupIngress:
+        - Description: Enable SSH for Instance
+          CidrIp: 0.0.0.0/0
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+
+  cpPublicEc2InstanceOne:
+    Type: AWS::EC2::Instance
+    Properties:
+      AssociatePublicIpAddress: True
+      SubnetId: !Ref cpPublicSubnetOne
+      AvailabilityZone: !Select [0, !GetAZs '']
+      ImageId: ami-0ce2e5b7d27317779
+      InstanceType: t2.micro
+      KeyName: awsEc2ImageHandlerInstances
+      SecurityGroups:
+        - cpSecurityGroup
+      NetworkInterfaces:
+        - SubnetId: !Ref cpPublicSubnetOne
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            - VolumeSize: 8
+              DeleteOnTermination: True
+
+# Outputs
+
+Outputs:
+  VPC:
+    Description: ID of the Created VPC
+    Value: !Ref cpVpc
+
+  PublicSubnets:
+    Description: Public subnets
+    Value: !Join [ "," , [ !Ref cpPublicSubnetOne , !Ref cpPublicSubnetTwo ]]
+
+  PublicSubnet1:
+    Description: Public subnet 1
+    Value: !Ref cpPublicSubnetOne
+
+  PublicSubnet2:
+    Description: Public subnet 2
+    Value: !Ref cpPublicSubnetTwo
+
+
+  PrivateSubnets:
+    Description: Private subnets
+    Value: !Join [ "," , [ !Ref cpPrivateSubnetOne , !Ref cpPrivateSubnetTwo ]]
+
+  PrivateSubnet1:
+    Description: Private subnet 1
+    Value: !Ref cpPrivateSubnetOne
+
+  PrivateSubnet2:
+    Description: Private subnet 2
+    Value: !Ref cpPrivateSubnetTwo
